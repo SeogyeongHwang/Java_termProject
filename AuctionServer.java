@@ -1,113 +1,167 @@
-package term_project;
+package Auction;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
-
-class Users {
-	   private String name;
-	   private String phoneNumber;
-	   
-	   public Users(String name, String phoneNumber) {
-	      this.name = name;
-	      this.phoneNumber = phoneNumber;
-	   }
-	   
-	   public String getName() {
-	      return name;
-	   }
-	   
-	   public String getPhoneNumber() {
-	      return phoneNumber;
-	   }
-	   
-	   public boolean equals(Object data) {
-	      Users user = (Users) data;
-	      
-	      return name.equals(user.name) && phoneNumber.equals(user.phoneNumber); 
-	   }
-}
-
-class login extends Thread {
-	private Socket incoming;
-	private Auction auction;
-	   
-	login(Socket incoming, Auction auction) {
-		this.incoming = incoming;
-	    this.auction = auction;
-	}
-	   
-	public void run() {
-		try {
-			BufferedReader in = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
-	        PrintWriter out = new PrintWriter(incoming.getOutputStream(), true);
-	         
-	        String role = in.readLine();
-	        String name = in.readLine();
-	        String phonenumber = in.readLine();
-	         
-	        if (role != null && name != null && phonenumber != null) {
-	        	Users user = new Users(name, phonenumber);
-	            if (role.equals("buyer")) {
-	               auction.addBuyer(user);
-	               
-	               String price = in.readLine();
-	               if (price != null) {
-	                  try {
-	                     int Price = Integer.parseInt(price);
-	                     // ∞°∞›∞˙ User ¡§∫∏ ¿˙¿Â
-	                  }
-	               }
-	            }
-	            else if (role.equals("seller")) {
-	            	auction.addSeller(user);
-	        }
-	      }
-	      incoming.close();
-	      } catch (Exception e) { 
-	         System.out.println(e); 
-	      }
-	   }
-}
 
 public class AuctionServer {
 	public static void main(String[] args) {
-		Auction auction = new Auction();
-	      
-	    try {
-	    	ServerSocket s = new ServerSocket(5000);
-	         
-	        while (true) {
-	        	Socket incoming = s.accept();
-	            new login(incoming, auction).start();
-	        }
-	    } catch (IOException e) {
-	    	System.out.println(e);
-	    }
+		try {
+			ServerSocket s = new ServerSocket(5000);
+			while(true) {
+				Socket incoming = s.accept();
+				ObjectInputStream in = new ObjectInputStream(incoming.getInputStream());
+				int type = (int) in.readObject();
+				
+				if(type==0) {	//Seller
+					new Auction_Seller(in).start();					
+					System.out.println("spawning seller thread");
+				}
+				else if(type==1) {	//Buyer
+					new Auction_Buyer(in).start();					
+					System.out.println("spawning buyer thread");
+				}
+			}
+		}
+		catch(Exception e) {
+			System.out.println(e);
+		}
 	}
 }
 
-class Auction {
-	private ArrayList<Users> buyers = new ArrayList<>();
-	private ArrayList<Users> sellers = new ArrayList<>();
-	   
-	public synchronized void addBuyer(Users buyer) {
-		buyers.add(buyer);
+class Auction_Seller extends Thread{
+	ObjectInputStream in;
+	
+	Auction_Seller(ObjectInputStream in) {
+		this.in = in;
 	}
-	   
-	public synchronized void addSeller(Users seller) {
-	    sellers.add(seller);
+	
+	public void run() {
+		try {
+			BufferedReader in = new BufferedReader(new InputStreamReader(in.getInputStream()));
+		}
+		catch(Exception e) {
+			System.out.println(e);
+		}
 	}
-	   
-	public synchronized ArrayList<Users> getBuyers() {
-	    return buyers;
+	
+}
+
+// Item info
+class Item_info{
+	String itemName;
+	int price;
+	String img_path;
+	int time;
+	
+	Item_info(String itemName, int price, String img_path, int time){
+		this.itemName = itemName;
+		this.price = price;
+		this.img_path = img_path;
+		this.time = time;
 	}
-	   
-	public synchronized ArrayList<Users> getSellers() {
-	    return sellers;
+	
+	public void setTime(int time) {
+		this.time = time;
 	}
-	   
-	public synchronized boolean same(Users user1, Users user2) {
-	    return user1.equals(user2);
+
+	public String getItemname() {
+		return itemName;
+	}
+	
+	public int getPrice() {
+		return price;
+	}
+	
+	public String getImgpath() {
+		return img_path;
+	}
+	
+	public int getTime() {
+		return time;
+	}
+	
+}
+
+
+// Seller class
+class Seller{
+	Login_info user;
+	int click;	//Î¨ºÌíàÎì±Î°ù ÌÅ¥Î¶≠=0, ÌåêÎß§ÎÇ¥Ïó≠ ÌÅ¥Î¶≠=1
+	String itemName;
+	int start_price;
+	String img_path;
+	
+	Seller(Login_info user,int click,String itemName,int start_price, String img_path){
+		this.user = user;
+		this.click = click;
+		this.itemName = itemName;
+		this.start_price = start_price;
+		this.img_path = img_path;
+	}
+	
+	public Login_info getLogininfo() {
+		return user;
+	}
+	
+	public int getClick() {
+		return click;
+	}
+	
+	public String getItemname() {
+		return itemName;
+	}
+	
+	public int getStartprice() {
+		return start_price;
+	}
+	
+	public String getImgpath() {
+		return img_path;
+	}
+}
+
+
+// Buyer class
+class Buyer{
+	Login_info user;
+	int price;
+	
+	Buyer(Login_info user, int price){
+		this.user = user;
+		this.price = price;
+	}
+	
+	public Login_info getLogininfo() {
+		return user;
+	}
+	
+	public int getPrice() {
+		return price;
+	}
+}
+
+
+// Login_info class
+class Login_info{
+	int user_type;
+	String name;
+	String phone_num;
+	
+	Login_info(int type, String name, String phone_num){
+		this.user_type = type;
+		this.name = name;
+		this.phone_num=phone_num;
+	}
+	
+	public int getUsertype() {
+		return user_type;
+	}
+	
+	public String getName() {
+		return name;
+	}
+	
+	public String getPhonenum() {
+		return phone_num;
 	}
 }
