@@ -48,6 +48,7 @@ class Auction_Seller extends Thread{
 
 // Item info
 class Item_info{
+	int value=0;	//유찰 낙찰 판단용
 	String itemName;
 	int price;
 	String img_path;
@@ -143,18 +144,12 @@ class Buyer{
 
 // Login_info class
 class Login_info{
-	int user_type;
 	String name;
 	String phone_num;
 	
-	Login_info(int type, String name, String phone_num){
-		this.user_type = type;
+	Login_info(String name, String phone_num){
 		this.name = name;
 		this.phone_num=phone_num;
-	}
-	
-	public int getUsertype() {
-		return user_type;
 	}
 	
 	public String getName() {
