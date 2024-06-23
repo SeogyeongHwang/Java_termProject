@@ -11,14 +11,16 @@ public class AuctionServer {
 			while(true) {
 				Socket incoming = s.accept();
 				ObjectInputStream in = new ObjectInputStream(incoming.getInputStream());
-				int type = (int) in.readObject();
+				
+				boolean type = (boolean) in.readObject();
 				Login_info user = (Login_info) in.readObject();
 				
-				if(type==0) {	//Seller
-					new Auction_Seller(incoming, user).start();					
+				if(type==false) {	//Seller
+					Auction_Seller seller = new Auction_Seller(incoming, user);
+					seller.start();
 					System.out.println("spawning seller thread");
 				}
-				else if(type==1) {	//Buyer
+				else if(type== true) {	//Buyer
 					new Auction_Buyer(incoming, user).start();					
 					System.out.println("spawning buyer thread");
 				}
@@ -44,13 +46,18 @@ class Auction_Seller extends Thread{
 	}
 	
 	public void run() {
+		System.out.println("Seller thread started");
 		try {
-			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());;
+			System.out.println("1");
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+			System.out.println("2");
+			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+			
+			System.out.println("Seller Info: " + user);
 			int type;
 			Item_info item;
 			Data data = new Data(user);
-
+			System.out.println("1 " + data);
 			//판매자 기존 정보 검색,전달.
 			ArrayList<Item_info> ex_list = new ArrayList<>();
 			ex_list = data.getMyItem();
@@ -78,11 +85,14 @@ class Auction_Seller extends Thread{
 				}
 			}
 		}
+		
 		catch(Exception e) {
-			System.out.println(e);
-		}
+			e.printStackTrace();
+		} 
 	}	
 }
+
+
 
 class Auction_Buyer extends Thread{
 	Socket socket;
@@ -113,6 +123,7 @@ class Auction_Buyer extends Thread{
 			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			clients.add(out);
+			System.out.println(clients);
 			Buyer buyer = (Buyer) in.readObject();
 			
 			if (clients != null && data.getNowItem() != null) {
@@ -127,8 +138,8 @@ class Auction_Buyer extends Thread{
 						System.out.println("Auction end");
 						break;
 					}
-					int button = (int) in.readObject();
-					if (button == 1) {
+					boolean button = (boolean) in.readObject();
+					if (button == true) {
 						int price = (int) in.readObject();
 						buyer = (Buyer) in.readObject();
 						int currentItemIndex = data.getNow();
@@ -266,7 +277,8 @@ class CountdownTimer extends Thread{
 }
 
 //Item info
-class Item_info{
+class Item_info implements Serializable{
+	private static final long serialVersionUID = 1L;
 	int value=0;	//진행, 유찰, 낙찰 판단용
 	String itemName;
 	int price;
@@ -370,13 +382,14 @@ class Buyer{
 
 
 // Login_info class
-class Login_info{
+class Login_info implements Serializable {
+	private static final long serialVersionUID = 1L;
 	String name;
-	String phone_num;
+	String phonenum;
 	
-	Login_info(String name, String phone_num){
+	Login_info(String name, String phonenum){
 		this.name = name;
-		this.phone_num=phone_num;
+		this.phonenum = phonenum;
 	}
 	
 	public String getName() {
@@ -384,6 +397,11 @@ class Login_info{
 	}
 	
 	public String getPhonenum() {
-		return phone_num;
+		return phonenum;
+	}
+
+	@Override
+	public String toString() {
+		return name + "," + phonenum;
 	}
 }
