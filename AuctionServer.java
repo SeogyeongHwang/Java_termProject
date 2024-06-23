@@ -263,64 +263,6 @@ class Item_info{
 }
 
 
-// Seller class
-class Seller{
-	Login_info user;
-	int click;	//물품등록 클릭=0, 판매내역 클릭=1
-	String itemName;
-	int start_price;
-	String img_path;
-	
-	Seller(Login_info user,int click,String itemName,int start_price, String img_path){
-		this.user = user;
-		this.click = click;
-		this.itemName = itemName;
-		this.start_price = start_price;
-		this.img_path = img_path;
-	}
-	
-	public Login_info getLogininfo() {
-		return user;
-	}
-	
-	public int getClick() {
-		return click;
-	}
-	
-	public String getItemname() {
-		return itemName;
-	}
-	
-	public int getStartprice() {
-		return start_price;
-	}
-	
-	public String getImgpath() {
-		return img_path;
-	}
-}
-
-
-// Buyer class
-class Buyer{
-	Login_info user;
-	int price;
-	
-	Buyer(Login_info user, int price){
-		this.user = user;
-		this.price = price;
-	}
-	
-	public Login_info getLogininfo() {
-		return user;
-	}
-	
-	public int getPrice() {
-		return price;
-	}
-}
-
-
 // Login_info class
 class Login_info{
 	String name;
