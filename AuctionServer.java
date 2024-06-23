@@ -130,6 +130,10 @@ class Data{
 		return sellerList.size();
 	}
 	
+	public int getNow() {
+		return num;
+	}
+	
 	//현재 판매중인 아이템 정보.
 	public Item_info getNowItem(){
 		return itemList.get(num);
@@ -140,6 +144,10 @@ class Data{
 		if(itemList.size() > num) {
 			num++;
 		}
+	}
+	
+	public Login_info getSeller(int n) {
+		return sellerList.get(n);
 	}
 	
 	public ArrayList<Item_info> getMyItem() {
