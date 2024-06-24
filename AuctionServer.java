@@ -268,11 +268,11 @@ class CountdownTimer extends Thread{
 			try {
 				count = init_count;
 				for(int i=count; i>=0;i--) {
-					System.out.println("Time: "+i+"s");
+					//System.out.println("Time: "+i+"s");
 					count = i;
 					Thread.sleep(1000);
 				}
-				System.out.println("Time's up");
+				//System.out.println("Time's up");
 				if(!(data.nextItem())) {	// sell next following item
 					wait();
 				}
