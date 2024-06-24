@@ -1,4 +1,4 @@
-package Auction_git;
+package Auction;
 
 import java.io.*;
 import java.net.*;
@@ -8,6 +8,8 @@ public class AuctionServer {
 	public static void main(String[] args) {
 		try {
 			ServerSocket s = new ServerSocket(5000);
+			CountdownTimer timer = new CountdownTimer(10);
+			timer.start();
 			while(true) {
 				Socket incoming = s.accept();
 				System.out.println("Client connected");
@@ -20,12 +22,12 @@ public class AuctionServer {
 				System.out.println("Login info readed.");
 
 				if(type==false) {	//Seller
-					Auction_Seller seller = new Auction_Seller(incoming, user);
+					Auction_Seller seller = new Auction_Seller(incoming, user, timer);
 					seller.start();
 					System.out.println("spawning seller thread");
 				}
 				else if(type== true) {	//Buyer
-					new Auction_Buyer(incoming, user).start();					
+					new Auction_Buyer(incoming, user, timer).start();					
 					System.out.println("spawning buyer thread");
 				}
 			}
@@ -41,10 +43,12 @@ public class AuctionServer {
 class Auction_Seller extends Thread{
 	Socket socket;
 	Login_info user;
+	CountdownTimer timer;
 	
-	Auction_Seller(Socket socket, Login_info user) {
+	Auction_Seller(Socket socket, Login_info user, CountdownTimer timer) {
 		this.socket = socket;
 		this.user = user;
+		this.timer = timer;
 	}
 	
 	public void search() {
@@ -77,13 +81,13 @@ class Auction_Seller extends Thread{
 				
 				if(type==0) {	// item registration
 					data.addItem(item);
-					out.writeObject(1);
+					out.writeObject(true);
 				}
 				else if(type==1) {	// Check sales history
 					int myitemnum = data.getItemNum(item);
 					
 					if(myitemnum == -1) {	//-1:Error
-						Item_info noitem = new Item_info("Error",0,"");	//3��° String�� Error�̹��� �ʿ�.
+						Item_info noitem = new Item_info("Error",0,"Server Error.\nItem not found.");	//Item not found Error.
 						out.writeObject(noitem);
 					}
 					else {
@@ -103,66 +107,39 @@ class Auction_Seller extends Thread{
 //Auction System for Buyer
 class Auction_Buyer extends Thread{
 	Socket socket;
-	Buyer lastbuyer;
 	Login_info user;
-	ArrayList<ObjectOutputStream> clients = new ArrayList<>();
-	Data data;
 	CountdownTimer timer;
+	Data data;
 	
-	Auction_Buyer(Socket socket, Login_info user) {
+	Auction_Buyer(Socket socket, Login_info user, CountdownTimer timer) {
 		this.socket = socket;
 		this.user = user;
-	}
-	
-	private void Time(int time) {
-		for (ObjectOutputStream out : clients) {
-			try {
-				out.writeObject(time);
-				out.flush();
-			} catch (IOException e) {
-				System.out.println(e);
-			}
-		}
+		this.timer = timer;
+		data = new Data(user);
 	}
 	
 	public void run() {
 		try {
 			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-			clients.add(out);
-			System.out.println(clients);
-			Buyer buyer = (Buyer) in.readObject();
-			
-			if (clients != null && data.getNowItem() != null) {
-				timer = new CountdownTimer(5);
-				timer.start();
-				
-				while(true) {
-					int remainTime = timer.getTime();
-					Time(remainTime);
-
-					if (remainTime == 0) {
-						System.out.println("Auction end");
-						break;
+			out.writeObject(false);		//first we update data with next 2 lines
+			while(true) {
+				out.writeObject(data.getNowItem());
+				out.writeObject(timer.getTime());
+				if(in.available()>0) {		// inputstream is available
+					int my_price = in.readInt();
+					if(my_price>data.getNowPrice()) {	// need synchronized this line + next line
+						data.setNowPrice(my_price);
+						out.writeObject(true);			// success update my price
 					}
-					boolean button = (boolean) in.readObject();
-					if (button == true) {
-						int price = (int) in.readObject();
-						buyer = (Buyer) in.readObject();
-						int currentItemIndex = data.getNow();
-						Login_info currentSeller = data.getSeller(currentItemIndex);
-							
-						if (!currentSeller.getName().equals(buyer.getLogininfo().getName()) || !currentSeller.getPhonenum().equals(buyer.getLogininfo().getPhonenum()))
-							lastbuyer = new Buyer(user, price);
-						else System.out.println("Seller cannot buy their own item");
-						
-						timer = new CountdownTimer(5);
-						timer.start();
-						
+					else {
+						out.writeObject(false);			// false update my price(cause it's not maximum offer price)
 					}
 				}
+				else {
+					out.writeObject(false);				// just data update
+				}
 			}
-			out.writeObject(lastbuyer);
 		} catch(Exception e) {
 			System.out.println(e);
 		}
@@ -172,10 +149,9 @@ class Auction_Buyer extends Thread{
 
 // Data base (Acts as a Central Server)
 class Data{
-	private ArrayList<Login_info> sellerList = new ArrayList<>();
-	private ArrayList<Item_info> itemList = new ArrayList<>();
-	private int num=0;	// Sales item number
-
+	static ArrayList<Login_info> sellerList = new ArrayList<>();
+	static ArrayList<Item_info> itemList = new ArrayList<>();
+	static int num=0;	// Sales item number
 	Login_info user;
 	
 	
@@ -183,9 +159,13 @@ class Data{
 		this.user = user;
 	}
 	
+	Data(){	// method for CountdownTimer
+	}
+	
 	public synchronized void addItem(Item_info item) {
 		sellerList.add(user);
 		itemList.add(item);	
+		notifyAll();
 	}
 	
 	public int len() {
@@ -199,6 +179,14 @@ class Data{
 	// item info on sale
 	public Item_info getNowItem(){
 		return itemList.get(num);
+	}
+	
+	public int getNowPrice() {
+		return itemList.get(num).getPrice();
+	}
+	
+	public void setNowPrice(int my_price) {
+		itemList.get(num).setPrice(my_price, user);
 	}
 	
 	// change to next item
@@ -255,6 +243,7 @@ class CountdownTimer extends Thread{
 	int count = 0;	// countdown time initial value
 	int init_count = 0;
 	boolean running = true;
+	Data data = new Data();
 	
 	CountdownTimer(int count){
 		this.init_count=count;
@@ -276,7 +265,7 @@ class CountdownTimer extends Thread{
 					Thread.sleep(1000);
 				}
 				System.out.println("Time's up");
-
+				
 			}
 			catch(Exception e) {
 				System.out.println(e);
@@ -329,64 +318,6 @@ class Item_info implements Serializable{
 		return buyer;
 	}
 	
-}
-
-
-// Seller class
-class Seller{
-	Login_info user;
-	int click;	//registration item=0 sell item=1
-	String itemName;
-	int start_price;
-	String img_path;
-	
-	Seller(Login_info user,int click,String itemName,int start_price, String img_path){
-		this.user = user;
-		this.click = click;
-		this.itemName = itemName;
-		this.start_price = start_price;
-		this.img_path = img_path;
-	}
-	
-	public Login_info getLogininfo() {
-		return user;
-	}
-	
-	public int getClick() {
-		return click;
-	}
-	
-	public String getItemname() {
-		return itemName;
-	}
-	
-	public int getStartprice() {
-		return start_price;
-	}
-	
-	public String getImgpath() {
-		return img_path;
-	}
-}
-
-
-// Buyer class
-class Buyer{
-	Login_info user;
-	int price;
-	
-	Buyer(Login_info user, int price){
-		this.user = user;
-		this.price = price;
-	}
-	
-	public Login_info getLogininfo() {
-		return user;
-	}
-	
-	public int getPrice() {
-		return price;
-	}
 }
 
 
