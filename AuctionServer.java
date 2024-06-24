@@ -271,7 +271,7 @@ class CountdownTimer extends Thread{
 		return count;
 	}
 	
-	public void run() {
+	public synchronized void run() {
 		try {
 			wait();		// start when at least one product is registered
 		}
