@@ -35,51 +35,51 @@ public class BuyerPanel extends JPanel {
         JPanel centerPanel = new JPanel(new BorderLayout());
         JPanel bottomPanel = new JPanel(new FlowLayout());
 
-        // ªÛ«∞∏Ì ∑π¿Ã∫Ì
-        itemNameLabel = new JLabel("ªÛ«∞∏Ì");
+        // ÏÉÅÌíàÎ™Ö Î†àÏù¥Î∏î
+        itemNameLabel = new JLabel("ÏÉÅÌíàÎ™Ö");
         topPanel.add(itemNameLabel, BorderLayout.NORTH);
 
-        // ¿ÃπÃ¡ˆ ∑π¿Ã∫Ì
-        imageLabel = new JLabel("ªÁ¡¯");
+        // Ïù¥ÎØ∏ÏßÄ Î†àÏù¥Î∏î
+        imageLabel = new JLabel("ÏÇ¨ÏßÑ");
         centerPanel.add(imageLabel, BorderLayout.CENTER);
 
-        // Ω√¿€ ∞°∞› ∑π¿Ã∫Ì
-        startPriceLabel = new JLabel("Ω√¿€ ∞°∞›");
+        // ÏãúÏûë Í∞ÄÍ≤© Î†àÏù¥Î∏î
+        startPriceLabel = new JLabel("ÏãúÏûë Í∞ÄÍ≤©");
         centerPanel.add(startPriceLabel, BorderLayout.NORTH);
 
-        // «ˆ¿Á ∞°∞› ∑π¿Ã∫Ì
-        currentPriceLabel = new JLabel("«ˆ¿Á ∞°∞›");
+        // ÌòÑÏû¨ Í∞ÄÍ≤© Î†àÏù¥Î∏î
+        currentPriceLabel = new JLabel("ÌòÑÏû¨ Í∞ÄÍ≤©");
         centerPanel.add(currentPriceLabel, BorderLayout.SOUTH);
 
-        // ≈∏¿Ã∏” ∑π¿Ã∫Ì
-        timerLabel = new JLabel("≈∏¿Ã∏”");
+        // ÌÉÄÏù¥Î®∏ Î†àÏù¥Î∏î
+        timerLabel = new JLabel("ÌÉÄÏù¥Î®∏");
         bottomPanel.add(timerLabel);
 
-        // ¿‘¬˚∞° ¿‘∑¬ « µÂ
+        // ÏûÖÏ∞∞Í∞Ä ÏûÖÎ†• ÌïÑÎìú
         bidPriceField = new JTextField(10);
         bottomPanel.add(bidPriceField);
 
-        // ¿‘¬˚ πˆ∆∞
-        bidButton = new JButton("¿‘¬˚ πˆ∆∞");
+        // ÏûÖÏ∞∞ Î≤ÑÌäº
+        bidButton = new JButton("ÏûÖÏ∞∞ Î≤ÑÌäº");
         bottomPanel.add(bidButton);
 
         add(topPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // ¿‘¬˚ πˆ∆∞ ¿Ã∫•∆Æ ∏ÆΩ∫≥ 
+        // ÏûÖÏ∞∞ Î≤ÑÌäº Ïù¥Î≤§Ìä∏ Î¶¨Ïä§ÎÑà
         bidButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int bidPrice = Integer.parseInt(bidPriceField.getText());
                 if (bidPrice > currentPrice) {
                     sendBidToServer(bidPrice);
                 } else {
-                    JOptionPane.showMessageDialog(parentFrame, "¿‘¬˚∞°∞° «ˆ¿Á∞°∫∏¥Ÿ ≥∑Ω¿¥œ¥Ÿ.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(parentFrame, "ÏûÖÏ∞∞Í∞ÄÍ∞Ä ÌòÑÏû¨Í∞ÄÎ≥¥Îã§ ÎÇÆÏäµÎãàÎã§.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
 
-        // º≠πˆ∑Œ∫Œ≈Õ µ•¿Ã≈Õ∏¶ πﬁ¥¬ Ω∫∑πµÂ Ω√¿€
+        // ÏÑúÎ≤ÑÎ°úÎ∂ÄÌÑ∞ Îç∞Ïù¥ÌÑ∞Î•º Î∞õÎäî Ïä§Î†àÎìú ÏãúÏûë
         new Thread(() -> {
             try {
                 Socket socket = new Socket("localhost", 5000);
@@ -91,12 +91,12 @@ public class BuyerPanel extends JPanel {
                     currentPrice = (int) in.readObject();
                     remainingTime = (int) in.readObject();
 
-                    // UI æ˜µ•¿Ã∆Æ
+                    // UI ÏóÖÎç∞Ïù¥Ìä∏
                     SwingUtilities.invokeLater(() -> {
                         itemNameLabel.setText(currentProductName);
-                        // ¿ÃπÃ¡ˆ æ˜µ•¿Ã∆Æ ∑Œ¡˜ « ø‰
-                        startPriceLabel.setText("Ω√¿€ ∞°∞›: " + startPrice);
-                        currentPriceLabel.setText("«ˆ¿Á ∞°∞›: " + currentPrice);
+                        // Ïù¥ÎØ∏ÏßÄ ÏóÖÎç∞Ïù¥Ìä∏ Î°úÏßÅ ÌïÑÏöî
+                        startPriceLabel.setText("ÏãúÏûë Í∞ÄÍ≤©: " + startPrice);
+                        currentPriceLabel.setText("ÌòÑÏû¨ Í∞ÄÍ≤©: " + currentPrice);
                         updateTimer();
                     });
                 }
@@ -106,12 +106,12 @@ public class BuyerPanel extends JPanel {
         }).start();
     }
 
-    // º≠πˆ∑Œ ¿‘¬˚ ¡§∫∏∏¶ ∫∏≥ª¥¬ ∏ﬁº≠µÂ
+    // ÏÑúÎ≤ÑÎ°ú ÏûÖÏ∞∞ Ï†ïÎ≥¥Î•º Î≥¥ÎÇ¥Îäî Î©îÏÑúÎìú
     private void sendBidToServer(int bidPrice) {
         try (Socket socket = new Socket("localhost", 5000);
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream())) {
             out.writeObject(name);
-            out.writeObject("ƒ›");
+            out.writeObject(phone);
             out.writeObject(currentProductName);
             out.writeObject(bidPrice);
             out.writeObject("bid");
@@ -121,7 +121,7 @@ public class BuyerPanel extends JPanel {
         }
     }
 
-    // ≈∏¿Ã∏” æ˜µ•¿Ã∆Æ ∏ﬁº≠µÂ
+    // ÌÉÄÏù¥Î®∏ ÏóÖÎç∞Ïù¥Ìä∏ Î©îÏÑúÎìú
     private void updateTimer() {
         if (timer != null) {
             timer.cancel();
@@ -132,7 +132,7 @@ public class BuyerPanel extends JPanel {
             public void run() {
                 if (remainingTime > 0) {
                     remainingTime--;
-                    timerLabel.setText("≈∏¿Ã∏”: " + remainingTime + "√ ");
+                    timerLabel.setText("ÌÉÄÏù¥Î®∏: " + remainingTime + "Ï¥à");
                 } else {
                     timer.cancel();
                     isRunning = false;
