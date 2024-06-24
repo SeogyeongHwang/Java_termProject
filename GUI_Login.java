@@ -135,18 +135,7 @@ public class GUI_Login {
     	ObjectOutputStream out = null;
  //   	ObjectInputStream in = null;
         try {
-        	try { 
-        	int timeout = 5000;
-        	socket = new Socket();
-        	SocketAddress socketAddress = new InetSocketAddress("localhost", 5000);
-            socket.connect(socketAddress, timeout);
-        	} catch (SocketException e) {
-        		e.printStackTrace();
-        	} catch (IOException e) {
-        		System.out.println("try-cath2" + e);
-        	} catch (Exception e) {
-        		System.out.println("try-cath3" + e);
-        	}
+        	socket = new Socket("localhost", 5000);
             out = new ObjectOutputStream(socket.getOutputStream());
      //      in = new ObjectInputStream(socket.getInputStream());
             System.out.println("ObjectOutputStream created on client");
