@@ -2,6 +2,11 @@
 
 ## Login+Seller
 
+## 서버연결관련 수정 + 디테일한 입력조건 등 추가,,,,,
+
+
+
+
 ### MemberLoginGUI
 
 ##### -객체 생성 및 initialize메소드 호출로 GUI초기화
