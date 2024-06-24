@@ -69,7 +69,7 @@ class Auction_Seller extends Thread{
 			Data data = new Data(user);
 			System.out.println("connected Data server " + data);
 			
-			//Search and deliver seller's history
+			//Search and deliver seller's all history
 			ArrayList<Item_info> ex_list = new ArrayList<>();
 			ex_list = data.getMyItem();
 			out.writeObject(ex_list);
@@ -81,7 +81,7 @@ class Auction_Seller extends Thread{
 				
 				if(type==0) {	// item registration
 					data.addItem(item);
-					out.writeObject(true);
+					//out.writeObject(true);	//delete this reply
 				}
 				else if(type==1) {	// Check sales history
 					int myitemnum = data.getItemNum(item);
@@ -165,10 +165,10 @@ class Data{
 	public synchronized void addItem(Item_info item) {
 		sellerList.add(user);
 		itemList.add(item);	
-		notifyAll();
+		notifyAll();		// to wake timer
 	}
 	
-	public int len() {
+	public int getSize() {
 		return sellerList.size();
 	}
 	
@@ -190,9 +190,13 @@ class Data{
 	}
 	
 	// change to next item
-	public void nextItem() {
+	public boolean nextItem() {
 		if(itemList.size() > num) {
 			num++;
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 	
@@ -242,7 +246,6 @@ class Data{
 class CountdownTimer extends Thread{
 	int count = 0;	// countdown time initial value
 	int init_count = 0;
-	boolean running = true;
 	Data data = new Data();
 	
 	CountdownTimer(int count){
@@ -255,17 +258,24 @@ class CountdownTimer extends Thread{
 	}
 	
 	public void run() {
-		while(running) {	// STOP when sold out all items /// or wait() until registration new item
+		try {
+			wait();		// start when at least one product is registered
+		}
+		catch(Exception e) {
+			System.out.println(e);
+		}
+		while(true) {	// STOP when sold out all items /// or wait() until registration new item
 			try {
 				count = init_count;
 				for(int i=count; i>=0;i--) {
-					if (!running) break;
 					System.out.println("Time: "+i+"s");
 					count = i;
 					Thread.sleep(1000);
 				}
 				System.out.println("Time's up");
-				
+				if(!(data.nextItem())) {	// sell next following item
+					wait();
+				}
 			}
 			catch(Exception e) {
 				System.out.println(e);
