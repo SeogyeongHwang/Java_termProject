@@ -1,4 +1,4 @@
-package term_project;
+package Auction;
 
 import java.io.*;
 import java.net.*;
@@ -8,22 +8,41 @@ public class AuctionServer {
 	public static void main(String[] args) {
 		try {
 			ServerSocket s = new ServerSocket(5000);
+			CountdownTimer timer = new CountdownTimer(10);
+			timer.start();
+			
 			while(true) {
 				Socket incoming = s.accept();
+				System.out.println("Client connected");
 				ObjectInputStream in = new ObjectInputStream(incoming.getInputStream());
+				Object obj;
+				boolean type = true;
+				Login_info user = null;
+				Item_info item = null;
 				
-				boolean type = (boolean) in.readObject();
-				Login_info user = (Login_info) in.readObject();
+				if ((obj = in.readObject()) != null) {
+					System.out.println("2");
+					if (obj instanceof Item_info) {
+						item = (Item_info) obj;
+						System.out.println(item);
+					}else if (obj instanceof Login_info) {
+						user = (Login_info) obj;
+						System.out.println("Login info readed.");					
+					}else if (obj instanceof Boolean) {
+						type = (boolean) obj;
+						System.out.println("client type: "+ type);
+					}
+				}
 				
-				if(type==false) {	//Seller
-					Auction_Seller seller = new Auction_Seller(incoming, user);
+				if(type==false && (user != null || item != null)) {	//Seller
+					Auction_Seller seller = new Auction_Seller(incoming, user, item, timer);
 					seller.start();
 					System.out.println("spawning seller thread");
 				}
-				else if(type== true) {	//Buyer
-					new Auction_Buyer(incoming, user).start();					
+				else if(type== true && (user != null)) {	//Buyer
+					new Auction_Buyer(incoming, user, timer).start();					
 					System.out.println("spawning buyer thread");
-				}
+				} else System.out.println("Finish");
 			}
 		}
 		catch(Exception e) {
@@ -32,13 +51,19 @@ public class AuctionServer {
 	}
 }
 
+
+// Auction System for Seller
 class Auction_Seller extends Thread{
 	Socket socket;
+	Item_info item;
 	Login_info user;
+	CountdownTimer timer;
 	
-	Auction_Seller(Socket socket, Login_info user) {
+	Auction_Seller(Socket socket, Login_info user, Item_info item, CountdownTimer timer) {
 		this.socket = socket;
 		this.user = user;
+		this.item = item;
+		this.timer = timer;
 	}
 	
 	public void search() {
@@ -49,43 +74,35 @@ class Auction_Seller extends Thread{
 		System.out.println("Seller thread started");
 		try {
 			System.out.println("1");
-			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+//			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 			System.out.println("2");
-			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-			
-			System.out.println("Seller Info: " + user);
-			int type;
-			Item_info item;
+			ObjectInputStream in = null;
+
 			Data data = new Data(user);
-			System.out.println("1 " + data);
-			//판매자 기존 정보 검색,전달.
-			ArrayList<Item_info> ex_list = new ArrayList<>();
-			ex_list = data.getMyItem();
-			out.writeObject(ex_list);
-			
+
 			//loop
-			while(true) {
-				type = (int) in.readObject();
-				item = (Item_info) in.readObject();
+			while(item != null) {
+				System.out.println("connected Data server " + data);
 				
-				if(type==0) {	//물품 등록
-					data.addItem(item);
-					out.writeObject(1);
+				//Search and deliver seller's all history
+				ArrayList<Item_info> ex_list = new ArrayList<>();
+				ex_list = data.getMyItem();
+//				out.writeObject(ex_list);
+				data.addItem(item);
+				//out.writeObject(true);	//delete this reply
+
+//				else if(type==1) {	// Check sales history
+				int myitemnum = data.getItemNum(item);
+							
+				if(myitemnum == -1) {	//-1:Error
+					Item_info noitem = new Item_info("Error",0,"Server Error.\nItem not found.");	//Item not found Error.
+//					out.writeObject(noitem);
 				}
-				else if(type==1) {	//판매내역 확인
-					int myitemnum = data.getItemNum(item);
-					
-					if(myitemnum == -1) {	//-1: 없음(오류)
-						Item_info noitem = new Item_info("Error",0,"");	//3번째 String에 Error이미지 필요.
-						out.writeObject(noitem);
-					}
-					else {
-						out.writeObject(data.getItem(myitemnum));
-					}
+				else {
+//					out.writeObject(data.getItem(myitemnum));
 				}
 			}
-		}
-		
+		}		
 		catch(Exception e) {
 			e.printStackTrace();
 		} 
@@ -93,80 +110,68 @@ class Auction_Seller extends Thread{
 }
 
 
-
+//Auction System for Buyer
 class Auction_Buyer extends Thread{
 	Socket socket;
-	Buyer lastbuyer;
 	Login_info user;
-	ArrayList<ObjectOutputStream> clients = new ArrayList<>();
-	Data data;
 	CountdownTimer timer;
+	Data data;
+	boolean i = false;
 	
-	Auction_Buyer(Socket socket, Login_info user) {
+	Auction_Buyer(Socket socket, Login_info user, CountdownTimer timer) {
 		this.socket = socket;
 		this.user = user;
-	}
-	
-	private void Time(int time) {
-		for (ObjectOutputStream out : clients) {
-			try {
-				out.writeObject(time);
-				out.flush();
-			} catch (IOException e) {
-				System.out.println(e);
-			}
-		}
+		this.timer = timer;
+		data = new Data(user);
 	}
 	
 	public void run() {
-		try {
+		// send data
+		try{
 			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-			clients.add(out);
-			System.out.println(clients);
-			Buyer buyer = (Buyer) in.readObject();
+			int my_price;
 			
-			if (clients != null && data.getNowItem() != null) {
-				timer = new CountdownTimer(5);
-				timer.start();
-				
-				while(true) {
-					int remainTime = timer.getTime();
-					Time(remainTime);
-
-					if (remainTime == 0) {
-						System.out.println("Auction end");
-						break;
+			Thread send_data = new Thread(()->{
+				try {
+					while(true) {
+						out.writeObject(i);
+						out.writeObject(data.getNowItem());
+						out.writeObject(timer.getTime());
+						i=false;	// set i=false
 					}
-					boolean button = (boolean) in.readObject();
-					if (button == true) {
-						int price = (int) in.readObject();
-						buyer = (Buyer) in.readObject();
-						int currentItemIndex = data.getNow();
-						Login_info currentSeller = data.getSeller(currentItemIndex);
-							
-						if (!currentSeller.getName().equals(buyer.getLogininfo().getName()) || !currentSeller.getPhonenum().equals(buyer.getLogininfo().getPhonenum()))
-							lastbuyer = new Buyer(user, price);
-						else System.out.println("Seller cannot buy their own item");
-						
-						timer = new CountdownTimer(5);
-						timer.start();
-						
+				}
+				catch(Exception e) {
+					System.out.println(e);
+				}
+			});
+			send_data.start();
+			// receive data, set i
+			try {
+				while(true) {
+					my_price = in.readInt();
+					if(my_price>data.getNowPrice()) {
+						data.setNowPrice(my_price);
+						i=true;
 					}
 				}
 			}
-			out.writeObject(lastbuyer);
-		} catch(Exception e) {
+			catch(Exception e) {
+				System.out.println(e);
+			}
+		}
+		catch(Exception e) {
 			System.out.println(e);
 		}
 	}	
 }
 
-class Data{
-	private ArrayList<Login_info> sellerList = new ArrayList<>();
-	private ArrayList<Item_info> itemList = new ArrayList<>();
-	private int num=0;	//판매중인 번호
 
+// Data base (Acts as a Central Server)
+class Data{
+	static ArrayList<Login_info> sellerList = new ArrayList<>();
+	static ArrayList<Item_info> itemList = new ArrayList<>();
+	static int num=0;	// Sales item number
 	Login_info user;
 	
 	
@@ -174,12 +179,16 @@ class Data{
 		this.user = user;
 	}
 	
-	public void addItem(Item_info item) {	//serialized 필요할것 같음.
-		sellerList.add(user);
-		itemList.add(item);	
+	Data(){	// method for CountdownTimer
 	}
 	
-	public int len() {
+	public synchronized void addItem(Item_info item) {
+		sellerList.add(user);
+		itemList.add(item);	
+		notifyAll();		// to wake timer
+	}
+	
+	public int getSize() {
 		return sellerList.size();
 	}
 	
@@ -187,15 +196,27 @@ class Data{
 		return num;
 	}
 	
-	//현재 판매중인 아이템 정보.
+	// item info on sale
 	public Item_info getNowItem(){
 		return itemList.get(num);
 	}
 	
-	//판매아이템을 다음으로 바꿈.(타이머 끝나고 실행)
-	public void nextItem() {
+	public int getNowPrice() {
+		return itemList.get(num).getPrice();
+	}
+	
+	public void setNowPrice(int my_price) {
+		itemList.get(num).setPrice(my_price, user);
+	}
+	
+	// change to next item
+	public boolean nextItem() {
 		if(itemList.size() > num) {
 			num++;
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 	
@@ -219,20 +240,20 @@ class Data{
 		return itemList.get(i);
 	}
 	
-	public int getItemNum(Item_info item) {	//판매자 이름 + 아이템이름 확인
+	public int getItemNum(Item_info item) {	// Check seller name + item name
 		String itemname = item.getItemname();
 		String name = user.getName();
 		int size = sellerList.size();
 		int match=-1;
 		
 		for(int i=0;i<size;i++) {
-			if(itemList.get(i).getItemname()==itemname) {	//물건 이름 일치
+			if(itemList.get(i).getItemname()==itemname) {	//match item name
 				match=i;
-				if(sellerList.get(match).getName()!=name) {	//판매자 이름 불일치.
+				if(sellerList.get(match).getName()!=name) {	//mismatch seller name
 					match=-1;
 				}
 			}
-			else{	//물건 이름 불일치
+			else{	//mismatch item name
 				match=-1;
 			}
 		}
@@ -245,7 +266,7 @@ class Data{
 class CountdownTimer extends Thread{
 	int count = 0;	// countdown time initial value
 	int init_count = 0;
-	boolean running = true;
+	Data data = new Data();
 	
 	CountdownTimer(int count){
 		this.init_count=count;
@@ -256,18 +277,25 @@ class CountdownTimer extends Thread{
 		return count;
 	}
 	
-	public void run() {
-		while(running) {	//true가 아니라 조건문으로 바꿔서 물건이 sold out일 경우 멈추도록 할 수 있음.
+	public synchronized void run() {
+		try {
+			wait();		// start when at least one product is registered
+		}
+		catch(Exception e) {
+			System.out.println(e);
+		}
+		while(true) {	// STOP when sold out all items /// or wait() until registration new item
 			try {
 				count = init_count;
 				for(int i=count; i>=0;i--) {
-					if (!running) break;
-					System.out.println("Time: "+i+"s");
+					//System.out.println("Time: "+i+"s");
 					count = i;
 					Thread.sleep(1000);
 				}
-				System.out.println("Time's up");
-
+				//System.out.println("Time's up");
+				if(!(data.nextItem())) {	// sell next following item
+					wait();
+				}
 			}
 			catch(Exception e) {
 				System.out.println(e);
@@ -279,7 +307,7 @@ class CountdownTimer extends Thread{
 //Item info
 class Item_info implements Serializable{
 	private static final long serialVersionUID = 1L;
-	int value=0;	//진행, 유찰, 낙찰 판단용
+	int value=0;	// For select sale/saled/fail to sale
 	String itemName;
 	int price;
 	String img_path;
@@ -299,7 +327,7 @@ class Item_info implements Serializable{
 		value = v;
 	}
 	
-	public void setPrice(int price, Login_info buyer) {	//serialized 필요하다 생각됨. 나머지 코드 완성 후 판단.
+	public synchronized void setPrice(int price, Login_info buyer) {	//synchro
 		this.price = price;
 		this.buyer = buyer.getName();
 	}
@@ -320,64 +348,6 @@ class Item_info implements Serializable{
 		return buyer;
 	}
 	
-}
-
-
-// Seller class
-class Seller{
-	Login_info user;
-	int click;	//물품등록 클릭=0, 판매내역 클릭=1
-	String itemName;
-	int start_price;
-	String img_path;
-	
-	Seller(Login_info user,int click,String itemName,int start_price, String img_path){
-		this.user = user;
-		this.click = click;
-		this.itemName = itemName;
-		this.start_price = start_price;
-		this.img_path = img_path;
-	}
-	
-	public Login_info getLogininfo() {
-		return user;
-	}
-	
-	public int getClick() {
-		return click;
-	}
-	
-	public String getItemname() {
-		return itemName;
-	}
-	
-	public int getStartprice() {
-		return start_price;
-	}
-	
-	public String getImgpath() {
-		return img_path;
-	}
-}
-
-
-// Buyer class
-class Buyer{
-	Login_info user;
-	int price;
-	
-	Buyer(Login_info user, int price){
-		this.user = user;
-		this.price = price;
-	}
-	
-	public Login_info getLogininfo() {
-		return user;
-	}
-	
-	public int getPrice() {
-		return price;
-	}
 }
 
 
