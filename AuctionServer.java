@@ -110,6 +110,7 @@ class Auction_Buyer extends Thread{
 	Login_info user;
 	CountdownTimer timer;
 	Data data;
+	boolean i = false;
 	
 	Auction_Buyer(Socket socket, Login_info user, CountdownTimer timer) {
 		this.socket = socket;
@@ -119,28 +120,41 @@ class Auction_Buyer extends Thread{
 	}
 	
 	public void run() {
-		try {
+		// send data
+		try{
 			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-			out.writeObject(false);		//first we update data with next 2 lines
-			while(true) {
-				out.writeObject(data.getNowItem());
-				out.writeObject(timer.getTime());
-				if(in.available()>0) {		// inputstream is available
-					int my_price = in.readInt();
-					if(my_price>data.getNowPrice()) {	// need synchronized this line + next line
-						data.setNowPrice(my_price);
-						out.writeObject(true);			// success update my price
-					}
-					else {
-						out.writeObject(false);			// false update my price(cause it's not maximum offer price)
+			int my_price;
+			
+			Thread send_data = new Thread(()->{
+				try {
+					while(true) {
+						out.writeObject(i);
+						out.writeObject(data.getNowItem());
+						out.writeObject(timer.getTime());
+						i=false;	// set i=false
 					}
 				}
-				else {
-					out.writeObject(false);				// just data update
+				catch(Exception e) {
+					System.out.println(e);
+				}
+			});
+			send_data.start();
+			// receive data, set i
+			try {
+				while(true) {
+					my_price = in.readInt();
+					if(my_price>data.getNowPrice()) {
+						data.setNowPrice(my_price);
+						i=true;
+					}
 				}
 			}
-		} catch(Exception e) {
+			catch(Exception e) {
+				System.out.println(e);
+			}
+		}
+		catch(Exception e) {
 			System.out.println(e);
 		}
 	}	
