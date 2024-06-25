@@ -10,8 +10,8 @@ public class GUI_Buyer {
     private static JLabel bidPriceLabel;
     private static JLabel resultLabel;
     private static Timer timer;
-    private static int timeLeft = 10;  // íƒ€ì´ë¨¸ ì‹œì‘ ì‹œê°„ (ì´ˆ)
-    private static int bidPrice = 10000;  // ì´ˆê¸° ì œì‹œ ê°€ê²©
+    private static int timeLeft = 10;  // Å¸ÀÌ¸Ó ½ÃÀÛ ½Ã°£ (ÃÊ)
+    private static int bidPrice = 10000;  // ÃÊ±â Á¦½Ã °¡°İ
 
     public static void main(String[] args) {
         // Create the frame
@@ -29,7 +29,7 @@ public class GUI_Buyer {
         // Create top panel
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(new Color(0, 96, 128));  // Blue background
-        JLabel itemNameLabel = new JLabel("ë¬¼í’ˆëª…", SwingConstants.CENTER);
+        JLabel itemNameLabel = new JLabel("¹°Ç°¸í", SwingConstants.CENTER);
         itemNameLabel.setOpaque(true);
         itemNameLabel.setBackground(Color.WHITE);
         topPanel.add(itemNameLabel, BorderLayout.CENTER);
@@ -41,9 +41,9 @@ public class GUI_Buyer {
         photoLabel.setOpaque(true);
         photoLabel.setBackground(Color.WHITE);
         // Load and set the image
-        ImageIcon imageIcon = new ImageIcon("ì´ë¯¸ì§€ ê²½ë¡œ");  // ì´ë¯¸ì§€ ê²½ë¡œ
+        ImageIcon imageIcon = new ImageIcon("ÀÌ¹ÌÁö °æ·Î");  // ÀÌ¹ÌÁö °æ·Î
         photoLabel.setIcon(imageIcon);
-        JLabel currentPriceLabel = new JLabel("í˜„ì¬ ê°€ê²©", SwingConstants.CENTER);
+        JLabel currentPriceLabel = new JLabel("ÇöÀç °¡°İ", SwingConstants.CENTER);
         currentPriceLabel.setOpaque(true);
         currentPriceLabel.setBackground(Color.WHITE);
         middlePanel.add(photoLabel, BorderLayout.CENTER);
@@ -55,7 +55,7 @@ public class GUI_Buyer {
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(5, 5, 5, 5);
 
-        timerLabel = new JLabel("ë‚¨ì€ ì‹œê°„: " + timeLeft, SwingConstants.CENTER);
+        timerLabel = new JLabel("³²Àº ½Ã°£: " + timeLeft, SwingConstants.CENTER);
         timerLabel.setOpaque(true);
         timerLabel.setBackground(Color.WHITE);
         timerLabel.setPreferredSize(new Dimension(100, 50));
@@ -63,7 +63,7 @@ public class GUI_Buyer {
         c.gridy = 0;
         bottomPanel.add(timerLabel, c);
 
-        bidPriceLabel = new JLabel("ì œì‹œ ê°€ê²©: " + bidPrice + "ì›", SwingConstants.CENTER);
+        bidPriceLabel = new JLabel("Á¦½Ã °¡°İ: " + bidPrice + "¿ø", SwingConstants.CENTER);
         bidPriceLabel.setOpaque(true);
         bidPriceLabel.setBackground(Color.WHITE);
         bidPriceLabel.setPreferredSize(new Dimension(150, 50));
@@ -71,14 +71,14 @@ public class GUI_Buyer {
         c.gridy = 0;
         bottomPanel.add(bidPriceLabel, c);
 
-        JButton bidButton = new JButton("ì…ì°°") {
+        JButton bidButton = new JButton("ÀÔÂû") {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 g.setColor(Color.ORANGE);
                 g.fillOval(0, 0, getWidth(), getHeight());
                 g.setColor(Color.BLACK);
-                g.drawString("     ì…ì°°", getWidth() / 2 - 30, getHeight() / 2 + 5);
+                g.drawString("     ÀÔÂû", getWidth() / 2 - 30, getHeight() / 2 + 5);
             }
         };
         bidButton.setPreferredSize(new Dimension(100, 50));
@@ -126,10 +126,10 @@ public class GUI_Buyer {
             public void actionPerformed(ActionEvent e) {
                 if (timeLeft > 0) {
                     timeLeft--;
-                    timerLabel.setText("ë‚¨ì€ ì‹œê°„: " + timeLeft);
+                    timerLabel.setText("³²Àº ½Ã°£: " + timeLeft);
                 } else {
                     timer.stop();
-                    resultLabel.setText("ì…ì°°ì¢…ë£Œ : XXXë‹˜ì´ ì…ì°°ì— ì„±ê³µí•˜ì…¨ìŠµë‹ˆë‹¤!");
+                    resultLabel.setText("ÀÔÂûÁ¾·á : XXX´ÔÀÌ ÀÔÂû¿¡ ¼º°øÇÏ¼Ì½À´Ï´Ù!");
                 }
             }
         });
@@ -138,7 +138,7 @@ public class GUI_Buyer {
 
     private static void resetTimer() {
         timeLeft = 10;
-        timerLabel.setText("ë‚¨ì€ ì‹œê°„: " + timeLeft);
+        timerLabel.setText("³²Àº ½Ã°£: " + timeLeft);
         if (!timer.isRunning()) {
             timer.start();
         }
@@ -146,7 +146,7 @@ public class GUI_Buyer {
 
     private static void increaseBidPrice() {
         bidPrice += 1000;
-        bidPriceLabel.setText("ì œì‹œ ê°€ê²©: " + bidPrice + "ì›");
+        bidPriceLabel.setText("Á¦½Ã °¡°İ: " + bidPrice + "¿ø");
         resultLabel.setText("");  // Clear the result message
     }
 }
